@@ -40,3 +40,8 @@ Thumbs.db
 
 # Build DIR
 build
+node_modules
+build
+.git
+.env
+npm-debug.log

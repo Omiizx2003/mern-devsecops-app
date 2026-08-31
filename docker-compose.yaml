@@ -1,0 +1,49 @@
+services:
+
+  mongo:
+    image: mongo:4.4
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - mern-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    restart: unless-stopped
+    environment:
+      PORT: 3500
+      MONGO_CONN_STR: mongodb://mongo:27017/tasks
+      USE_DB_AUTH: "false"
+    ports:
+      - "3500:3500"
+    depends_on:
+      - mongo
+    networks:
+      - mern-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_BACKEND_URL: http://localhost:3500/api/tasks
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - mern-network
+
+volumes:
+  mongo_data:
+
+networks:
+  mern-network:
+    driver: bridge
