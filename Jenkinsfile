@@ -26,5 +26,25 @@ pipeline {
                 '''
             }
         }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh '''
+                    trivy image \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      --no-progress \
+                      --timeout 15m \
+                      mern-backend:${BUILD_NUMBER}
+
+                    trivy image \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      --no-progress \
+                      --timeout 15m \
+                      mern-frontend:${BUILD_NUMBER}
+                '''
+            }
+        }
     }
 }
