@@ -46,5 +46,37 @@ pipeline {
                 '''
             }
         }
+
+        stage('ECR Login & Push') {
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'aws-jenkins-ci']
+                ]) {
+                    sh '''
+                        aws ecr get-login-password \
+                          --region ap-south-1 | \
+                        docker login \
+                          --username AWS \
+                          --password-stdin \
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com
+
+                        docker tag \
+                          mern-backend:${BUILD_NUMBER} \
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-backend:${BUILD_NUMBER}
+
+                        docker tag \
+                          mern-frontend:${BUILD_NUMBER} \
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-frontend:${BUILD_NUMBER}
+
+                        docker push \
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-backend:${BUILD_NUMBER}
+
+                        docker push \
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-frontend:${BUILD_NUMBER}
+                    '''
+                }
+            }
+        }
     }
 }
