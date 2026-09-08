@@ -1,22 +1,18 @@
-# Stage 1: Build React application
-FROM node:16-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
-
+RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY . .
-
-ARG REACT_APP_BACKEND_URL
-ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
 
 RUN npm run build
 
 
-# Stage 2: Production server
 FROM nginx:alpine
+
+RUN apk update && apk upgrade
 
 COPY --from=build /app/build /usr/share/nginx/html
 
