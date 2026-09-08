@@ -78,5 +78,40 @@ pipeline {
                 }
             }
         }
+
+        stage('GitOps Update') {
+            steps {
+                sshagent(['github-gitops-ssh']) {
+                    sh '''
+                        rm -rf gitops
+
+                        git clone \
+                          git@github.com:Omiizx2003/mern-devsecops-gitops.git \
+                          gitops
+
+                        cd gitops
+
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@localhost"
+
+                        sed -i "/backend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
+                          helm/mern-app/values.yaml
+
+                        sed -i "/frontend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
+                          helm/mern-app/values.yaml
+
+                        echo "Updated values.yaml:"
+                        cat helm/mern-app/values.yaml
+
+                        git add helm/mern-app/values.yaml
+
+                        git commit \
+                          -m "Update application images to ${BUILD_NUMBER}" || true
+
+                        git push origin main
+                    '''
+                }
+            }
+        }
     }
 }
