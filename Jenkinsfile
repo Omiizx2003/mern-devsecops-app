@@ -18,6 +18,26 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                              -Dsonar.projectKey=mern-devsecops \
+                              -Dsonar.projectName="MERN DevSecOps" \
+                              -Dsonar.sources=backend,frontend \
+                              -Dsonar.exclusions="**/node_modules/**,**/build/**,**/coverage/**" \
+                              -Dsonar.sourceEncoding=UTF-8 \
+                              -Dsonar.qualitygate.wait=true
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 sh '''
