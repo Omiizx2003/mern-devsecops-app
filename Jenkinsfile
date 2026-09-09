@@ -18,33 +18,61 @@ pipeline {
             }
         }
 
-        stage('Debug Sonar Connectivity') {
+        stage('Debug Jenkins Node & Sonar Connectivity') {
             steps {
                 sh '''
-                    echo "=== BASIC INFO ==="
+                    echo "======================================"
+                    echo "        JENKINS NODE INFORMATION"
+                    echo "======================================"
+
+                    echo "NODE_NAME=$NODE_NAME"
+                    echo "EXECUTOR_NUMBER=$EXECUTOR_NUMBER"
+                    echo "WORKSPACE=$WORKSPACE"
+
+                    echo ""
+                    echo "=== HOSTNAME ==="
                     hostname
-                    whoami
-                    id
 
-                    echo "=== PROCESS ==="
-                    ps -ef | grep -E "[j]enkins|[a]gent" || true
+                    echo ""
+                    echo "=== IP ADDRESSES ==="
+                    hostname -I
 
+                    echo ""
                     echo "=== NETWORK INTERFACES ==="
-                    ip addr
+                    ip -4 addr
 
+                    echo ""
                     echo "=== ROUTING ==="
                     ip route
 
-                    echo "=== SONAR STATUS ==="
-                    curl -v --connect-timeout 10 \
-                      http://10.0.11.220:9000/api/system/status || true
+                    echo ""
+                    echo "=== USER ==="
+                    whoami
+                    id
 
-                    echo "=== SONAR VERSION ENDPOINT ==="
-                    curl -v --connect-timeout 10 \
-                      http://10.0.11.220:9000/api/v2/analysis/version || true
+                    echo ""
+                    echo "======================================"
+                    echo "        SONARQUBE CONNECTIVITY"
+                    echo "======================================"
 
+                    echo ""
+                    echo "=== SonarQube System Status ==="
+                    curl -v --connect-timeout 10 \
+                      http://10.0.11.220:9000/api/system/status
+
+                    echo ""
+                    echo "=== SonarQube Analysis Version ==="
+                    curl -v --connect-timeout 10 \
+                      http://10.0.11.220:9000/api/v2/analysis/version
+
+                    echo ""
                     echo "=== PORT TEST ==="
-                    nc -vz -w 10 10.0.11.220 9000 || true
+                    nc -vz -w 10 10.0.11.220 9000
+
+                    echo ""
+                    echo "======================================"
+                    echo "      CONNECTIVITY TEST PASSED"
+                    echo "======================================"
                 '''
             }
         }
@@ -72,8 +100,13 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                    docker build -t mern-backend:${BUILD_NUMBER} ./backend
-                    docker build -t mern-frontend:${BUILD_NUMBER} ./frontend
+                    docker build \
+                      -t mern-backend:${BUILD_NUMBER} \
+                      ./backend
+
+                    docker build \
+                      -t mern-frontend:${BUILD_NUMBER} \
+                      ./frontend
                 '''
             }
         }
@@ -145,10 +178,12 @@ pipeline {
                         git config user.name "Jenkins CI"
                         git config user.email "jenkins@localhost"
 
-                        sed -i "/backend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
+                        sed -i \
+                          "/backend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
                           helm/mern-app/values.yaml
 
-                        sed -i "/frontend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
+                        sed -i \
+                          "/frontend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
                           helm/mern-app/values.yaml
 
                         echo "Updated values.yaml:"
