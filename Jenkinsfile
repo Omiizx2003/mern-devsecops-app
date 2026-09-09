@@ -21,18 +21,30 @@ pipeline {
         stage('Debug Sonar Connectivity') {
             steps {
                 sh '''
-                    echo "=== NODE ==="
+                    echo "=== BASIC INFO ==="
                     hostname
                     whoami
                     id
 
+                    echo "=== PROCESS ==="
+                    ps -ef | grep -E "[j]enkins|[a]gent" || true
+
+                    echo "=== NETWORK INTERFACES ==="
+                    ip addr
+
+                    echo "=== ROUTING ==="
+                    ip route
+
                     echo "=== SONAR STATUS ==="
                     curl -v --connect-timeout 10 \
-                      http://10.0.11.220:9000/api/system/status
+                      http://10.0.11.220:9000/api/system/status || true
 
                     echo "=== SONAR VERSION ENDPOINT ==="
                     curl -v --connect-timeout 10 \
-                      http://10.0.11.220:9000/api/v2/analysis/version
+                      http://10.0.11.220:9000/api/v2/analysis/version || true
+
+                    echo "=== PORT TEST ==="
+                    nc -vz -w 10 10.0.11.220 9000 || true
                 '''
             }
         }
