@@ -18,6 +18,25 @@ pipeline {
             }
         }
 
+        stage('Debug Sonar Connectivity') {
+            steps {
+                sh '''
+                    echo "=== NODE ==="
+                    hostname
+                    whoami
+                    id
+
+                    echo "=== SONAR STATUS ==="
+                    curl -v --connect-timeout 10 \
+                      http://10.0.11.220:9000/api/system/status
+
+                    echo "=== SONAR VERSION ENDPOINT ==="
+                    curl -v --connect-timeout 10 \
+                      http://10.0.11.220:9000/api/v2/analysis/version
+                '''
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 script {
