@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'aws-build'
+    }
 
     stages {
 
@@ -14,65 +16,6 @@ pipeline {
                       --timeout 15m \
                       --skip-dirs .git \
                       .
-                '''
-            }
-        }
-
-        stage('Debug Jenkins Node & Sonar Connectivity') {
-            steps {
-                sh '''
-                    echo "======================================"
-                    echo "        JENKINS NODE INFORMATION"
-                    echo "======================================"
-
-                    echo "NODE_NAME=$NODE_NAME"
-                    echo "EXECUTOR_NUMBER=$EXECUTOR_NUMBER"
-                    echo "WORKSPACE=$WORKSPACE"
-
-                    echo ""
-                    echo "=== HOSTNAME ==="
-                    hostname
-
-                    echo ""
-                    echo "=== IP ADDRESSES ==="
-                    hostname -I
-
-                    echo ""
-                    echo "=== NETWORK INTERFACES ==="
-                    ip -4 addr
-
-                    echo ""
-                    echo "=== ROUTING ==="
-                    ip route
-
-                    echo ""
-                    echo "=== USER ==="
-                    whoami
-                    id
-
-                    echo ""
-                    echo "======================================"
-                    echo "        SONARQUBE CONNECTIVITY"
-                    echo "======================================"
-
-                    echo ""
-                    echo "=== SonarQube System Status ==="
-                    curl -v --connect-timeout 10 \
-                      http://10.0.11.220:9000/api/system/status
-
-                    echo ""
-                    echo "=== SonarQube Analysis Version ==="
-                    curl -v --connect-timeout 10 \
-                      http://10.0.11.220:9000/api/v2/analysis/version
-
-                    echo ""
-                    echo "=== PORT TEST ==="
-                    nc -vz -w 10 10.0.11.220 9000
-
-                    echo ""
-                    echo "======================================"
-                    echo "      CONNECTIVITY TEST PASSED"
-                    echo "======================================"
                 '''
             }
         }
