@@ -1,9 +1,29 @@
 pipeline {
+
     agent {
         label 'aws-build'
     }
 
     stages {
+
+        stage('Get Git Commit SHA') {
+            steps {
+                script {
+                    env.GIT_SHA = sh(
+                        script: 'git rev-parse --short=7 HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    env.IMAGE_TAG = "${BUILD_NUMBER}-${GIT_SHA}"
+
+                    echo "========================================"
+                    echo "Jenkins Build Number : ${BUILD_NUMBER}"
+                    echo "Git Commit SHA       : ${GIT_SHA}"
+                    echo "Docker Image Tag     : ${IMAGE_TAG}"
+                    echo "========================================"
+                }
+            }
+        }
 
         stage('Trivy Filesystem Scan') {
             steps {
@@ -23,9 +43,11 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
+
                     def scannerHome = tool 'sonar-scanner'
 
                     withSonarQubeEnv('SonarQube') {
+
                         sh """
                             ${scannerHome}/bin/sonar-scanner \
                               -Dsonar.projectKey=mern-devsecops \
@@ -44,11 +66,11 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                      -t mern-backend:${BUILD_NUMBER} \
+                      -t mern-backend:${IMAGE_TAG} \
                       ./backend
 
                     docker build \
-                      -t mern-frontend:${BUILD_NUMBER} \
+                      -t mern-frontend:${IMAGE_TAG} \
                       ./frontend
                 '''
             }
@@ -62,24 +84,26 @@ pipeline {
                       --exit-code 1 \
                       --no-progress \
                       --timeout 15m \
-                      mern-backend:${BUILD_NUMBER}
+                      mern-backend:${IMAGE_TAG}
 
                     trivy image \
                       --severity HIGH,CRITICAL \
                       --exit-code 1 \
                       --no-progress \
                       --timeout 15m \
-                      mern-frontend:${BUILD_NUMBER}
+                      mern-frontend:${IMAGE_TAG}
                 '''
             }
         }
 
         stage('ECR Login & Push') {
             steps {
+
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
                      credentialsId: 'aws-jenkins-ci']
                 ]) {
+
                     sh '''
                         aws ecr get-login-password \
                           --region ap-south-1 | \
@@ -89,18 +113,18 @@ pipeline {
                           357199109816.dkr.ecr.ap-south-1.amazonaws.com
 
                         docker tag \
-                          mern-backend:${BUILD_NUMBER} \
-                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-backend:${BUILD_NUMBER}
+                          mern-backend:${IMAGE_TAG} \
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-backend:${IMAGE_TAG}
 
                         docker tag \
-                          mern-frontend:${BUILD_NUMBER} \
-                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-frontend:${BUILD_NUMBER}
+                          mern-frontend:${IMAGE_TAG} \
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-frontend:${IMAGE_TAG}
 
                         docker push \
-                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-backend:${BUILD_NUMBER}
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-backend:${IMAGE_TAG}
 
                         docker push \
-                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-frontend:${BUILD_NUMBER}
+                          357199109816.dkr.ecr.ap-south-1.amazonaws.com/mern-devsecops-dev-frontend:${IMAGE_TAG}
                     '''
                 }
             }
@@ -108,7 +132,9 @@ pipeline {
 
         stage('GitOps Update') {
             steps {
+
                 sshagent(['github-gitops-ssh']) {
+
                     sh '''
                         rm -rf gitops
 
@@ -122,20 +148,23 @@ pipeline {
                         git config user.email "jenkins@localhost"
 
                         sed -i \
-                          "/backend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
+                          "/backend:/,/service:/ s/tag:.*/tag: \\"${IMAGE_TAG}\\"/" \
                           helm/mern-app/values.yaml
 
                         sed -i \
-                          "/frontend:/,/service:/ s/tag:.*/tag: \\"${BUILD_NUMBER}\\"/" \
+                          "/frontend:/,/service:/ s/tag:.*/tag: \\"${IMAGE_TAG}\\"/" \
                           helm/mern-app/values.yaml
 
+                        echo "========================================"
                         echo "Updated values.yaml:"
+                        echo "========================================"
+
                         cat helm/mern-app/values.yaml
 
                         git add helm/mern-app/values.yaml
 
                         git commit \
-                          -m "Update application images to ${BUILD_NUMBER}" || true
+                          -m "Update application images to ${IMAGE_TAG}" || true
 
                         git push origin main
                     '''
