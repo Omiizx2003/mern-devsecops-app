@@ -52,7 +52,7 @@ pipeline {
                       --format JSON \
                       --out dependency-check-report \
                       --failOnCVSS 7
-                        '''
+                '''
             }
         }
 
