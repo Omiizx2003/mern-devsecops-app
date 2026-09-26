@@ -40,6 +40,20 @@ pipeline {
             }
         }
 
+        stage('OWASP Dependency Check') {
+            steps {
+                sh '''
+                    dependency-check.sh \
+                      --project "MERN DevSecOps" \
+                      --scan . \
+                      --format HTML \
+                      --format JSON \
+                      --out dependency-check-report \
+                      --failOnCVSS 7
+                '''
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 script {
