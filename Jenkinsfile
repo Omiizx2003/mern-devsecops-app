@@ -43,6 +43,8 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 sh '''
+                    mkdir -p dependency-check-report
+
                     dependency-check.sh \
                       --project "MERN DevSecOps" \
                       --scan . \
@@ -50,7 +52,7 @@ pipeline {
                       --format JSON \
                       --out dependency-check-report \
                       --failOnCVSS 7
-                '''
+                        '''
             }
         }
 
