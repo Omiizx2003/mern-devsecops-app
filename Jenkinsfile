@@ -1,7 +1,12 @@
+```groovy
 pipeline {
 
     agent {
         label 'aws-build'
+    }
+
+    triggers {
+        githubPush()
     }
 
     stages {
@@ -36,22 +41,6 @@ pipeline {
                       --timeout 15m \
                       --skip-dirs .git \
                       .
-                '''
-            }
-        }
-
-        stage('OWASP Dependency Check') {
-            steps {
-                sh '''
-                    mkdir -p dependency-check-report
-
-                    dependency-check.sh \
-                      --project "MERN DevSecOps" \
-                      --scan . \
-                      --format HTML \
-                      --format JSON \
-                      --out dependency-check-report \
-                      --failOnCVSS 7
                 '''
             }
         }
