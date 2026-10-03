@@ -5,10 +5,6 @@ pipeline {
         label 'aws-build'
     }
 
-    triggers {
-        githubPush()
-    }
-
     stages {
 
         stage('Get Git Commit SHA') {
